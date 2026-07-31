@@ -1,0 +1,18 @@
+{
+  "name": "build-and-learn-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --prefix apps/api run dev",
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "build": "npm --prefix packages/shared-types run build && npm --prefix apps/api run build && npm --prefix apps/web run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
