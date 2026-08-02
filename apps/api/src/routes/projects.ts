@@ -4,16 +4,37 @@ import { callRole } from '../ai/router';
 import { detectConceptsInCode, checkConceptGate, computeNextDifficulty } from '../services/conceptEngine';
 import { computeIndependenceReport, logCodeAttribution } from '../services/attributionService';
 import { runAntigravityAgentLoop } from '../ai/agenticEngine';
+import { optionalAuthenticateToken, AuthRequest } from '../middleware/authMiddleware';
 
 export const projectRouter = Router();
 
+// GET All Projects (scoped to user if authenticated)
+projectRouter.get('/', optionalAuthenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const projects = await prisma.project.findMany({
+      where: userId ? { OR: [{ userId }, { userId: null }] } : {},
+      orderBy: { createdAt: 'desc' },
+      include: {
+        milestones: true,
+        projectConcepts: { include: { concept: true } }
+      }
+    });
+    res.json(projects);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Phase 1: Create Project & Generate Roadmap
-projectRouter.post('/', async (req: Request, res: Response) => {
+projectRouter.post('/', optionalAuthenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { title, description, stack, experienceLevel, familiarWithStack, priority, designMode } = req.body;
+    const userId = req.user?.userId || null;
 
     const project = await prisma.project.create({
       data: {
+        userId,
         title: title || 'Untitled Project',
         description: description || 'Interactive learning project',
         stack: JSON.stringify(stack || ['React', 'Node.js', 'Express', 'TypeScript']),

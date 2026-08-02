@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { projectRouter } from './routes/projects';
 import { adminRouter } from './routes/admin';
+import { authRouter } from './routes/auth';
 import { setupWebSocket } from './ws/socketHandler';
 import { prisma } from './prismaClient';
 
@@ -20,6 +21,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRouter);
 app.use('/api/projects', projectRouter);
 app.use('/api/admin', adminRouter);
 

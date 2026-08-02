@@ -66,6 +66,23 @@ export interface User {
   createdAt: string;
 }
 
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface SignupPayload {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+
 export interface ArchitectureDoc {
   folderStructure?: string[];
   dbDesign?: { table: string; fields: string[] }[];
