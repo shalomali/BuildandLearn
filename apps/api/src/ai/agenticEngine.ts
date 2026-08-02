@@ -8,6 +8,7 @@ import {
   verifyCodeSyntax
 } from '../services/sandboxService';
 import { prisma } from '../prismaClient';
+import { emitCodeStreamChunk, emitMilestoneCompleted, getIO } from '../ws/socketHandler';
 
 export interface AgentLogEntry {
   id: string;
@@ -35,7 +36,10 @@ export async function runAntigravityAgentLoop(params: {
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    include: { projectConcepts: { include: { concept: true } } }
+    include: {
+      projectConcepts: { include: { concept: true } },
+      milestones: true
+    }
   });
 
   if (!project) throw new Error('Project not found');
@@ -149,6 +153,16 @@ RULES: OUTPUT ONLY EXECUTABLE TYPESCRIPT CODE. NO CONVERSATIONAL TEXT, NO MARKDO
     writeSandboxFile(projectId, step.filePath, code);
     generatedFiles[step.filePath] = code;
 
+    // Emit live code stream chunk via WebSocket
+    const io = getIO();
+    if (io) {
+      emitCodeStreamChunk(io, projectId, {
+        fileId: step.filePath,
+        filePath: step.filePath,
+        chunk: code
+      });
+    }
+
     // Track attribution for AI
     const lineCount = code.split('\n').length;
     await logCodeAttribution(projectId, {
@@ -190,6 +204,18 @@ RULES: OUTPUT ONLY EXECUTABLE TYPESCRIPT CODE. NO CONVERSATIONAL TEXT, NO MARKDO
         });
         return { success: false, generatedFiles };
       }
+    }
+  }
+
+  // Emit milestone completion event if active milestone exists
+  const finalIo = getIO();
+  if (finalIo && project.milestones && project.milestones.length > 0) {
+    const activeMilestone = project.milestones.find(m => m.status === 'active') || project.milestones[0];
+    if (activeMilestone) {
+      emitMilestoneCompleted(finalIo, projectId, {
+        milestoneId: activeMilestone.id,
+        title: activeMilestone.title
+      });
     }
   }
 

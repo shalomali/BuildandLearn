@@ -1,5 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { request } from '../api/client';
+import { getSocket } from '../ws/socket';
+import {
+  WsConceptGateEvent,
+  WsGateClearedEvent,
+  WsCodeStreamChunk,
+  WsMilestoneCompletedEvent
+} from '@build-and-learn/shared-types';
 import { useProjectStore } from '../state/projectStore';
 import { useLearningStore } from '../state/learningStore';
 import { useEditorStore } from '../state/editorStore';
@@ -16,7 +23,7 @@ import { AgentConsole, AgentConsoleLog } from '../components/editor/AgentConsole
 import { Play, Sparkles, FolderTree, BookOpen, Award, Info, Bot, Terminal } from 'lucide-react';
 
 export const Workspace: React.FC = () => {
-  const { currentProject, milestones, setPhase } = useProjectStore();
+  const { currentProject, milestones, setPhase, completeMilestone } = useProjectStore();
   const {
     gateActive,
     activeConceptId,
@@ -70,6 +77,38 @@ export const Workspace: React.FC = () => {
       }
     };
     fetchWorkspace();
+
+    // Setup Socket.IO Live WebSocket Listeners
+    const socket = getSocket();
+    socket.emit('join_project', currentProject.id);
+
+    const handleConceptGate = (data: WsConceptGateEvent) => {
+      triggerGate(data.action, data.conceptId, data.conceptName);
+    };
+
+    const handleGateCleared = (data: WsGateClearedEvent) => {
+      clearGate();
+    };
+
+    const handleCodeStreamChunk = (data: WsCodeStreamChunk) => {
+      setFileContent(data.filePath, data.chunk, 'ai');
+    };
+
+    const handleMilestoneCompleted = (data: WsMilestoneCompletedEvent) => {
+      completeMilestone(data.milestoneId);
+    };
+
+    socket.on('concept_gate', handleConceptGate);
+    socket.on('gate_cleared', handleGateCleared);
+    socket.on('code_stream_chunk', handleCodeStreamChunk);
+    socket.on('milestone_completed', handleMilestoneCompleted);
+
+    return () => {
+      socket.off('concept_gate', handleConceptGate);
+      socket.off('gate_cleared', handleGateCleared);
+      socket.off('code_stream_chunk', handleCodeStreamChunk);
+      socket.off('milestone_completed', handleMilestoneCompleted);
+    };
   }, [currentProject]);
 
   const fileList = Object.keys(files);

@@ -5,6 +5,7 @@ import { detectConceptsInCode, checkConceptGate, computeNextDifficulty } from '.
 import { computeIndependenceReport, logCodeAttribution } from '../services/attributionService';
 import { runAntigravityAgentLoop } from '../ai/agenticEngine';
 import { optionalAuthenticateToken, AuthRequest } from '../middleware/authMiddleware';
+import { emitConceptGate, emitGateCleared, getIO } from '../ws/socketHandler';
 
 export const projectRouter = Router();
 
@@ -346,6 +347,21 @@ CRITICAL RULE: OUTPUT ONLY EXECUTABLE CODE. DO NOT INCLUDE CONVERSATIONAL INTROD
     }));
 
     const gateDecision = checkConceptGate(conceptStates, detectedNames);
+
+    const io = req.app.get('io') || getIO();
+    if (io) {
+      if (gateDecision.action === 'PAUSE_AND_TEACH' || gateDecision.action === 'PROMPT_LEARNER_WRITE') {
+        emitConceptGate(io, req.params.id, {
+          action: gateDecision.action,
+          conceptId: gateDecision.conceptId || '',
+          conceptName: gateDecision.conceptName || 'Target Concept'
+        });
+      } else if (gateDecision.action === 'CONTINUE' && gateDecision.conceptId) {
+        emitGateCleared(io, req.params.id, {
+          conceptId: gateDecision.conceptId
+        });
+      }
+    }
 
     // Track code attribution for AI
     const lineCount = generatedCode.split('\n').length;

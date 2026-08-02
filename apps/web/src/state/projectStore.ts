@@ -15,6 +15,7 @@ interface ProjectState {
   setArchitecture: (architecture: ArchitectureDoc) => void;
   setMilestones: (milestones: Milestone[]) => void;
   setActiveMilestoneId: (id: string | null) => void;
+  completeMilestone: (milestoneId: string) => void;
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
@@ -30,5 +31,11 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setRoadmap: (roadmap) => set({ roadmap }),
   setArchitecture: (architecture) => set({ architecture }),
   setMilestones: (milestones) => set({ milestones }),
-  setActiveMilestoneId: (activeMilestoneId) => set({ activeMilestoneId })
+  setActiveMilestoneId: (activeMilestoneId) => set({ activeMilestoneId }),
+  completeMilestone: (milestoneId) =>
+    set((state) => ({
+      milestones: state.milestones.map((m) =>
+        m.id === milestoneId ? { ...m, status: 'completed', completedAt: new Date().toISOString() } : m
+      )
+    }))
 }));
