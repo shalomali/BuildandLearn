@@ -484,10 +484,24 @@ projectRouter.post('/:id/agentic/run', async (req: Request, res: Response) => {
 projectRouter.post('/:id/concepts/:conceptId/teach', async (req: Request, res: Response) => {
   try {
     const concept = await prisma.concept.findUnique({ where: { id: req.params.conceptId } });
+    const project = await prisma.project.findUnique({ where: { id: req.params.id } });
+
+    const systemPrompt = `You are a world-class computer science educator.
+Your task is to teach the concept "${concept?.name || req.params.conceptId}" with crystal clarity to a developer working on project "${project?.title || 'Web Platform'}" (${project?.experienceLevel || 'intermediate'} level).
+
+CRITICAL TEACHING REQUIREMENTS:
+1. SUMMARY: Provide a clear, 2-sentence explanation of what this concept is and why developers use it.
+2. ANALOGY: Provide an intuitive, real-world analogy.
+3. KEY TAKEAWAYS: Provide 3 distinct, actionable bulleted takeaways.
+4. CODE EXAMPLE: Provide a clean, modern 4-8 line TypeScript/JavaScript code demonstration showing the concept in action.
+5. CODE EXPLANATION: Provide a clear, comprehensive paragraph walking through exactly what this code demonstration is doing, how it executes step-by-step, and why each key function/keyword is used.
+6. LINE BY LINE EXPLANATION: Break down the key lines in the code demonstration as an array of objects: [{ "line": "code line snippet", "explanation": "clear 1-sentence explanation of what this line accomplishes" }].
+
+Return valid JSON with fields: conceptId, conceptName, summary, analogy, keyTakeaways (array), codeExample, codeExplanation, lineByLineExplanation (array of objects).`;
 
     const aiRes = await callRole<any>('Teacher', {
-      systemPrompt: 'Teach concept using JSON: conceptId, conceptName, summary, analogy, keyTakeaways (array), codeExample.',
-      userMessage: `Explain concept: ${concept?.name || req.params.conceptId}`,
+      systemPrompt,
+      userMessage: `Explain concept "${concept?.name || req.params.conceptId}" in detail with code breakdown.`,
       jsonMode: true
     });
 
@@ -501,10 +515,27 @@ projectRouter.post('/:id/concepts/:conceptId/teach', async (req: Request, res: R
 projectRouter.post('/:id/concepts/:conceptId/quiz', async (req: Request, res: Response) => {
   try {
     const concept = await prisma.concept.findUnique({ where: { id: req.params.conceptId } });
+    const { teachContent } = req.body || {};
+
+    const systemPrompt = `You are a pedagogical master quiz author.
+CRITICAL MANDATE:
+1. The quiz question MUST ONLY test concepts, code lines, or takeaways that were explicitly taught in the provided micro-lesson below. DO NOT ask about external, untaught topics or advanced edge cases.
+2. The question prompt must be crystal clear, beginner-friendly, and directly related to the micro-lesson code example and takeaways.
+3. If options are provided, ensure the correct choice is unambiguous and directly backed by the lesson.
+
+Return valid JSON with fields: id, conceptId, format, prompt, codeContext, options (array of 4 strings), expectedAnswerPattern, difficulty.`;
+
+    const lessonContext = teachContent
+      ? `LESSON TAUGHT TO LEARNER:
+Summary: ${teachContent.summary || ''}
+Key Takeaways: ${JSON.stringify(teachContent.keyTakeaways || [])}
+Code Example: ${teachContent.codeExample || ''}
+Code Explanation: ${teachContent.codeExplanation || ''}`
+      : `Concept Name: ${concept?.name}`;
 
     const aiRes = await callRole<any>('QuizGenerator', {
-      systemPrompt: 'Generate interactive code quiz in JSON: id, conceptId, format, prompt, codeContext, options, expectedAnswerPattern, difficulty.',
-      userMessage: `Generate quiz question for concept ${concept?.name}`,
+      systemPrompt,
+      userMessage: `Generate a clear 1-question quiz for concept "${concept?.name}" strictly testing what was taught.\n${lessonContext}`,
       jsonMode: true
     });
 

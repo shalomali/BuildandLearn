@@ -1,6 +1,6 @@
 import React from 'react';
 import { TeachContent } from '@build-and-learn/shared-types';
-import { BookOpen, Lightbulb, CheckCircle2, ArrowRight } from 'lucide-react';
+import { BookOpen, Lightbulb, CheckCircle2, ArrowRight, Code2, HelpCircle, FileCode } from 'lucide-react';
 
 interface TeachStepProps {
   content: TeachContent;
@@ -9,7 +9,7 @@ interface TeachStepProps {
 
 export const TeachStep: React.FC<TeachStepProps> = ({ content, onContinueToQuiz }) => {
   return (
-    <div className="p-5 space-y-4 text-slate-200">
+    <div className="p-5 space-y-5 text-slate-200">
       <div className="flex items-center gap-2 border-b border-surface-border pb-3">
         <BookOpen className="w-5 h-5 text-accent-blue" />
         <h2 className="text-base font-bold text-white">{content.conceptName}</h2>
@@ -17,7 +17,7 @@ export const TeachStep: React.FC<TeachStepProps> = ({ content, onContinueToQuiz 
 
       {/* Summary */}
       <div className="glass-card p-3.5 rounded-lg border border-surface-border space-y-1.5">
-        <div className="text-xs font-semibold uppercase text-accent-blue tracking-wider">Concept Summary</div>
+        <div className="text-xs font-semibold uppercase text-accent-blue tracking-wider">Concept Overview</div>
         <p className="text-xs text-slate-300 leading-relaxed">{content.summary}</p>
       </div>
 
@@ -42,20 +42,54 @@ export const TeachStep: React.FC<TeachStepProps> = ({ content, onContinueToQuiz 
         </ul>
       </div>
 
-      {/* Code Example */}
+      {/* Code Demonstration */}
       {content.codeExample && (
-        <div className="space-y-1.5">
-          <div className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Code Example</div>
-          <pre className="p-3 rounded-lg bg-slate-950 text-slate-200 font-mono text-[11px] overflow-x-auto border border-slate-800">
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-blue tracking-wider">
+            <Code2 className="w-4 h-4 text-accent-blue" />
+            <span>Code Demonstration</span>
+          </div>
+          <pre className="p-3 rounded-lg bg-slate-950 text-slate-200 font-mono text-[11px] overflow-x-auto border border-slate-800 shadow-inner">
             <code>{content.codeExample}</code>
           </pre>
         </div>
       )}
 
-      {/* Unlock Button */}
+      {/* Step-by-Step Code Explanation */}
+      {content.codeExplanation && (
+        <div className="p-3.5 rounded-lg bg-blue-950/20 border border-blue-500/30 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-300 uppercase tracking-wider">
+            <HelpCircle className="w-4 h-4 text-blue-400" /> What This Code Is Doing (Step-by-Step)
+          </div>
+          <p className="text-xs text-blue-100 leading-relaxed">{content.codeExplanation}</p>
+        </div>
+      )}
+
+      {/* Line-by-Line Breakdown */}
+      {content.lineByLineExplanation && content.lineByLineExplanation.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400 tracking-wider">
+            <FileCode className="w-4 h-4 text-cyan-400" /> Line-by-Line Breakdown
+          </div>
+          <div className="space-y-2">
+            {content.lineByLineExplanation.map((item, idx) => (
+              <div key={idx} className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 space-y-1">
+                <div className="font-mono text-[11px] text-cyan-300 bg-slate-900 px-2 py-1 rounded border border-slate-800 break-words">
+                  {item.line}
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed pl-1">
+                  👉 {item.explanation}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Unlock Quiz Button */}
       <button
         onClick={onContinueToQuiz}
-        className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-accent-blue to-accent-purple text-white text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-all glow-blue"
+        className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-accent-blue to-accent-purple text-white text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-all glow-blue shadow-lg mt-4"
       >
         <span>Take Micro-Quiz to Unlock Streaming</span>
         <ArrowRight className="w-4 h-4" />

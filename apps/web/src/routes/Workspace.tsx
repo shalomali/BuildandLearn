@@ -264,7 +264,8 @@ export const Workspace: React.FC = () => {
     if (!currentProject || !activeConceptId) return;
     try {
       const quizRes = await request<any>(`/projects/${currentProject.id}/concepts/${activeConceptId}/quiz`, {
-        method: 'POST'
+        method: 'POST',
+        body: JSON.stringify({ teachContent })
       });
       setCurrentQuiz(quizRes.question);
       setActiveTab('quiz');

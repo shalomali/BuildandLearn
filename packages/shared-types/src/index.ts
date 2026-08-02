@@ -237,6 +237,8 @@ export interface TeachContent {
   analogy: string;
   keyTakeaways: string[];
   codeExample: string;
+  codeExplanation?: string;
+  lineByLineExplanation?: { line: string; explanation: string }[];
   documentationUrl?: string;
 }
 

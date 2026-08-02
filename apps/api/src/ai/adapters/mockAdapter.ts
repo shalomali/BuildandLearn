@@ -73,14 +73,19 @@ export class MockAdapter implements ProviderAdapter {
         text: JSON.stringify({
           conceptId: "jwt-auth-concept",
           conceptName: "JWT Authentication",
-          summary: "JSON Web Tokens (JWT) are a compact, URL-safe means of representing claims to be transferred between two parties.",
+          summary: "JSON Web Tokens (JWT) are a compact, URL-safe means of representing claims securely between client and server without needing database session lookups on every request.",
           analogy: "Think of a JWT like a stamped wristband at an amusement park. Once verified at the entrance, you can show your wristband to ride any attraction without re-entering your password.",
           keyTakeaways: [
-            "JWT consists of Header, Payload, and Signature.",
-            "Stateless authentication: server verifies the cryptographic signature without querying the database on every request.",
-            "Always store tokens securely and pass them via HTTP Authorization Bearer headers."
+            "JWT consists of Header, Payload, and Signature concatenated with dots.",
+            "jwt.sign() encrypts user identity into a signed token using a secret key.",
+            "jwt.verify() decrypts and validates token integrity before granting access."
           ],
-          codeExample: `// Generating a JWT Token\nconst token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: '1h' });\n\n// Verifying a JWT Token\nconst payload = jwt.verify(token, SECRET_KEY);`
+          codeExample: `// 1. Create a signed token for a logged-in user\nconst token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: '1h' });\n\n// 2. Verify and extract user payload on protected requests\nconst payload = jwt.verify(token, SECRET_KEY);`,
+          codeExplanation: "This code demonstration performs full stateless authentication. First, `jwt.sign()` accepts the user payload `{ userId: user.id }` and signs it using your server's private `SECRET_KEY`. Next, when the client sends the token back in headers, `jwt.verify()` validates the cryptographic signature against `SECRET_KEY` and extracts the original user payload.",
+          lineByLineExplanation: [
+            { line: "const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: '1h' });", explanation: "Signs user ID with SECRET_KEY and sets a 1-hour expiration timestamp." },
+            { line: "const payload = jwt.verify(token, SECRET_KEY);", explanation: "Validates signature using SECRET_KEY. Throws an error if expired or tampered with, else returns decoded payload." }
+          ]
         }),
         raw: { mock: true }
       };
@@ -92,15 +97,15 @@ export class MockAdapter implements ProviderAdapter {
           id: "quiz-" + Date.now(),
           conceptId: "jwt-auth-concept",
           format: "identify_bug",
-          prompt: "Identify the security vulnerability in the following JWT verification code:",
-          codeContext: "app.get('/protected', (req, res) => {\n  const token = req.headers['authorization'];\n  const decoded = jwt.decode(token); // Decoding without secret key!\n  res.send(`Welcome ${decoded.user}`);\n});",
+          prompt: "Based on the lesson taught, why must you use jwt.verify() instead of jwt.decode() to protect server routes?",
+          codeContext: "app.get('/protected', (req, res) => {\n  const token = req.headers['authorization'];\n  // BUG: Using decode instead of verify!\n  const decoded = jwt.decode(token);\n  res.send(`Welcome ${decoded.userId}`);\n});",
           options: [
-            "jwt.decode() parses payload without verifying signature; jwt.verify() must be used.",
-            "Authorization header is missing Bearer prefix.",
-            "Token is not converted to JSON.",
-            "jwt.decode() should return a Promise."
+            "jwt.decode() only un-base64s the payload without verifying secret signature integrity; jwt.verify() must be used.",
+            "jwt.decode() deletes the user session from the database.",
+            "jwt.decode() only works with passwords, not tokens.",
+            "jwt.decode() returns an XML document instead of JSON."
           ],
-          expectedAnswerPattern: "jwt.decode",
+          expectedAnswerPattern: "jwt.decode.*signature",
           difficulty: "applied"
         }),
         raw: { mock: true }
